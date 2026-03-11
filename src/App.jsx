@@ -229,7 +229,7 @@ function App() {
       <section className="hero">
         <div className="hero-copy">
           <div className="hero-topbar">
-            <p className="eyebrow">Belajar React + Vite + Neon</p>
+            <p className="eyebrow">Irfan (1) </p>
             <button
               type="button"
               className="theme-toggle"
@@ -242,10 +242,9 @@ function App() {
               {theme === 'light' ? 'Dark mode' : 'Light mode'}
             </button>
           </div>
-          <h1>Todo tidak lagi statis di browser</h1>
+          <h1>Pencatatan Tugas </h1>
           <p className="intro">
-            Frontend React sekarang mengambil data dari backend lokal, lalu
-            backend menyimpan todo ke Neon PostgreSQL.
+            gunakan untuk mancatat tugas agar tidak terlewat.
           </p>
           <div className="hero-highlights">
             <span className="highlight-pill">Backend API</span>
