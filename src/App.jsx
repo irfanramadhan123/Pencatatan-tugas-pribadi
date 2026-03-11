@@ -1,38 +1,29 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-const todoStorageKey = 'belajar-react-vite.todos'
 const themeStorageKey = 'belajar-react-vite.theme'
 
-const initialTodos = [
-  {
-    id: 1,
-    text: 'Pelajari useState',
-    done: true,
-    category: 'React',
-    deadline: '2026-03-08',
-  },
-  {
-    id: 2,
-    text: 'Buat komponen latihan',
-    done: false,
-    category: 'Coding',
-    deadline: '2026-03-12',
-  },
-  {
-    id: 3,
-    text: 'Coba tambah tugas baru',
-    done: false,
-    category: 'Project',
-    deadline: '2026-03-15',
-  },
-]
+const apiBaseUrl = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
 
-function normalizeTodos(todos) {
-  return todos.map((todo) => ({
-    ...todo,
-    deadline: todo.deadline ?? '',
-  }))
+function buildApiUrl(pathname) {
+  return apiBaseUrl ? `${apiBaseUrl}${pathname}` : pathname
+}
+
+async function requestJson(pathname, options) {
+  const response = await fetch(buildApiUrl(pathname), {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    ...options,
+  })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data.message ?? 'Permintaan ke server gagal.')
+  }
+
+  return data
 }
 
 function formatDeadline(deadline) {
@@ -92,19 +83,45 @@ function App() {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem(themeStorageKey) ?? 'light'
   })
-  const [todos, setTodos] = useState(() => {
-    const savedTodos = localStorage.getItem(todoStorageKey)
-    return savedTodos ? normalizeTodos(JSON.parse(savedTodos)) : initialTodos
-  })
-
-  useEffect(() => {
-    localStorage.setItem(todoStorageKey, JSON.stringify(todos))
-  }, [todos])
+  const [todos, setTodos] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem(themeStorageKey, theme)
   }, [theme])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadTodos() {
+      try {
+        setError('')
+        const data = await requestJson('/api/todos')
+
+        if (isMounted) {
+          setTodos(data)
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setError(loadError.message)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadTodos()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const completedTodos = useMemo(
     () => todos.filter((todo) => todo.done).length,
@@ -128,41 +145,83 @@ function App() {
     return todos
   }, [filter, todos])
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
     const trimmedTask = task.trim()
     if (!trimmedTask) return
 
-    setTodos((currentTodos) => [
-      {
-        id: Date.now(),
-        text: trimmedTask,
-        done: false,
-        category: category.trim() || 'Umum',
-        deadline,
-      },
-      ...currentTodos,
-    ])
-    setTask('')
-    setCategory('')
-    setDeadline('')
+    try {
+      setIsSaving(true)
+      setError('')
+      setMessage('')
+
+      const newTodo = await requestJson('/api/todos', {
+        method: 'POST',
+        body: JSON.stringify({
+          text: trimmedTask,
+          category,
+          deadline,
+        }),
+      })
+
+      setTodos((currentTodos) => [newTodo, ...currentTodos])
+      setTask('')
+      setCategory('')
+      setDeadline('')
+      setMessage('Tugas tersimpan ke Neon.')
+    } catch (submitError) {
+      setError(submitError.message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  function toggleTodo(id) {
-    setTodos((currentTodos) =>
-      currentTodos.map((todo) =>
-        todo.id === id ? { ...todo, done: !todo.done } : todo,
-      ),
-    )
+  async function toggleTodo(id, done) {
+    try {
+      setError('')
+      setMessage('')
+
+      const updatedTodo = await requestJson(`/api/todos/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ done: !done }),
+      })
+
+      setTodos((currentTodos) =>
+        currentTodos.map((todo) => (todo.id === id ? updatedTodo : todo)),
+      )
+    } catch (toggleError) {
+      setError(toggleError.message)
+    }
   }
 
-  function deleteTodo(id) {
-    setTodos((currentTodos) => currentTodos.filter((todo) => todo.id !== id))
+  async function deleteTodo(id) {
+    try {
+      setError('')
+      setMessage('')
+      await requestJson(`/api/todos/${id}`, {
+        method: 'DELETE',
+      })
+
+      setTodos((currentTodos) => currentTodos.filter((todo) => todo.id !== id))
+    } catch (deleteError) {
+      setError(deleteError.message)
+    }
   }
 
-  function clearCompleted() {
-    setTodos((currentTodos) => currentTodos.filter((todo) => !todo.done))
+  async function clearCompleted() {
+    try {
+      setError('')
+      setMessage('')
+      await requestJson('/api/todos/completed', {
+        method: 'DELETE',
+      })
+
+      setTodos((currentTodos) => currentTodos.filter((todo) => !todo.done))
+      setMessage('Semua tugas selesai dihapus dari Neon.')
+    } catch (clearError) {
+      setError(clearError.message)
+    }
   }
 
   return (
@@ -170,7 +229,7 @@ function App() {
       <section className="hero">
         <div className="hero-copy">
           <div className="hero-topbar">
-            <p className="eyebrow">Belajar React + Vite</p>
+            <p className="eyebrow">Belajar React + Vite + Neon</p>
             <button
               type="button"
               className="theme-toggle"
@@ -183,15 +242,15 @@ function App() {
               {theme === 'light' ? 'Dark mode' : 'Light mode'}
             </button>
           </div>
-          <h1>Kelola tugas dengan tampilan yang lebih hidup</h1>
+          <h1>Todo tidak lagi statis di browser</h1>
           <p className="intro">
-            Catat pekerjaan, atur jenis tugas, dan pantau deadline dalam satu
-            dashboard yang lebih rapi dan interaktif.
+            Frontend React sekarang mengambil data dari backend lokal, lalu
+            backend menyimpan todo ke Neon PostgreSQL.
           </p>
           <div className="hero-highlights">
-            <span className="highlight-pill">Auto save</span>
-            <span className="highlight-pill">Deadline tracker</span>
-            <span className="highlight-pill">Light & dark mode</span>
+            <span className="highlight-pill">Backend API</span>
+            <span className="highlight-pill">Neon PostgreSQL</span>
+            <span className="highlight-pill">Realtime fetch</span>
           </div>
         </div>
 
@@ -228,8 +287,8 @@ function App() {
             <div>
               <h2>Tugas Anda</h2>
               <p className="panel-note">
-                Tugas tersimpan otomatis di browser beserta kategori dan
-                deadline
+                Data tersimpan di Neon lewat backend Node, bukan lagi di
+                localStorage.
               </p>
             </div>
             <span className="badge">{remainingTodos} tersisa</span>
@@ -253,7 +312,9 @@ function App() {
               value={deadline}
               onChange={(event) => setDeadline(event.target.value)}
             />
-            <button type="submit">Tambah</button>
+            <button type="submit" disabled={isSaving}>
+              {isSaving ? 'Menyimpan...' : 'Tambah'}
+            </button>
           </form>
 
           <div className="toolbar">
@@ -286,55 +347,61 @@ function App() {
             </button>
           </div>
 
-          <ul className="todo-list">
-            {filteredTodos.map((todo) => {
-              const deadlineStatus = getDeadlineStatus(todo.deadline, todo.done)
+          {message ? <p className="info-state">{message}</p> : null}
+          {error ? <p className="error-state">{error}</p> : null}
+          {isLoading ? <p className="empty-state">Memuat data dari backend...</p> : null}
 
-              return (
-                <li
-                  key={todo.id}
-                  className={
-                    todo.done
-                      ? 'todo done'
-                      : isOverdue(todo.deadline, todo.done)
-                        ? 'todo overdue'
-                        : 'todo'
-                  }
-                >
-                  <label className="todo-main">
-                    <input
-                      type="checkbox"
-                      checked={todo.done}
-                      onChange={() => toggleTodo(todo.id)}
-                    />
-                    <span className="todo-text-group">
-                      <strong>{todo.text}</strong>
-                      <small>{formatDeadline(todo.deadline)}</small>
-                    </span>
-                  </label>
+          {!isLoading ? (
+            <ul className="todo-list">
+              {filteredTodos.map((todo) => {
+                const deadlineStatus = getDeadlineStatus(todo.deadline, todo.done)
 
-                  <div className="todo-meta">
-                    <span className="tag">{todo.category}</span>
-                    <span className={`status-pill ${deadlineStatus.tone}`}>
-                      {deadlineStatus.label}
-                    </span>
-                    <button
-                      type="button"
-                      className="ghost"
-                      onClick={() => deleteTodo(todo.id)}
-                    >
-                      Hapus
-                    </button>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+                return (
+                  <li
+                    key={todo.id}
+                    className={
+                      todo.done
+                        ? 'todo done'
+                        : isOverdue(todo.deadline, todo.done)
+                          ? 'todo overdue'
+                          : 'todo'
+                    }
+                  >
+                    <label className="todo-main">
+                      <input
+                        type="checkbox"
+                        checked={todo.done}
+                        onChange={() => toggleTodo(todo.id, todo.done)}
+                      />
+                      <span className="todo-text-group">
+                        <strong>{todo.text}</strong>
+                        <small>{formatDeadline(todo.deadline)}</small>
+                      </span>
+                    </label>
 
-          {filteredTodos.length === 0 ? (
+                    <div className="todo-meta">
+                      <span className="tag">{todo.category}</span>
+                      <span className={`status-pill ${deadlineStatus.tone}`}>
+                        {deadlineStatus.label}
+                      </span>
+                      <button
+                        type="button"
+                        className="ghost"
+                        onClick={() => deleteTodo(todo.id)}
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : null}
+
+          {!isLoading && filteredTodos.length === 0 ? (
             <p className="empty-state">
-              Tidak ada tugas pada filter ini. Tambah tugas baru atau ganti
-              filter.
+              Belum ada tugas pada filter ini. Tambah tugas baru untuk menyimpan
+              data ke Neon.
             </p>
           ) : null}
         </article>

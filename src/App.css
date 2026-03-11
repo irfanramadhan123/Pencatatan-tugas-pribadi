@@ -387,6 +387,23 @@
   color: var(--text-muted);
 }
 
+.info-state,
+.error-state {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+}
+
+.info-state {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+.error-state {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;
