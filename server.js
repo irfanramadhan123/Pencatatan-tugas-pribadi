@@ -1,7 +1,11 @@
 import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
+import googleAuthHandler from './api/auth/google.js'
+import loginHandler from './api/auth/login.js'
 import healthHandler from './api/health.js'
+import { corsHeaders } from './api/_lib/http.js'
+import profileHandler from './api/profile.js'
 import todoByIdHandler from './api/todos/[id].js'
 import clearCompletedHandler from './api/todos/completed.js'
 import todosHandler from './api/todos/index.js'
@@ -45,11 +49,7 @@ const server = http.createServer(async (request, response) => {
   const { pathname } = url
 
   if (request.method === 'OPTIONS') {
-    response.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    })
+    response.writeHead(204, corsHeaders)
     response.end()
     return
   }
@@ -57,6 +57,21 @@ const server = http.createServer(async (request, response) => {
   try {
     if (request.method === 'GET' && pathname === '/api/health') {
       await healthHandler(request, response)
+      return
+    }
+
+    if (pathname === '/api/auth/login') {
+      await loginHandler(request, response)
+      return
+    }
+
+    if (pathname === '/api/auth/google') {
+      await googleAuthHandler(request, response)
+      return
+    }
+
+    if (pathname === '/api/profile') {
+      await profileHandler(request, response)
       return
     }
 
@@ -77,17 +92,13 @@ const server = http.createServer(async (request, response) => {
 
     response.writeHead(404, {
       'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      ...corsHeaders,
     })
     response.end(JSON.stringify({ message: 'Endpoint tidak ditemukan.' }))
   } catch (error) {
     response.writeHead(500, {
       'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      ...corsHeaders,
     })
     response.end(
       JSON.stringify({

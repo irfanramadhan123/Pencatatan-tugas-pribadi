@@ -1,3 +1,9 @@
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
 export async function readJsonBody(request) {
   if (request.body !== undefined) {
     if (!request.body) {
@@ -47,9 +53,7 @@ export function sendJson(response, statusCode, payload) {
 
   response.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    ...corsHeaders,
   })
   response.end(JSON.stringify(payload))
 }

@@ -1,4 +1,5 @@
-import { ensureTodosTable, getSql } from '../_lib/db.js'
+import { requireAuthUser } from '../_lib/auth.js'
+import { ensureDatabaseSchema, getSql } from '../_lib/db.js'
 import { sendJson, sendMethodNotAllowed } from '../_lib/http.js'
 import { clearCompletedTodos } from '../_lib/todos.js'
 
@@ -11,12 +12,20 @@ export default async function handler(request, response) {
   const sql = getSql()
 
   try {
-    await ensureTodosTable(sql)
-    await clearCompletedTodos(sql)
+    await ensureDatabaseSchema(sql)
+    const user = await requireAuthUser(sql, request)
+    await clearCompletedTodos(sql, user.id)
     sendJson(response, 200, { message: 'Semua tugas selesai telah dihapus.' })
   } catch (error) {
-    sendJson(response, 500, {
-      message: error instanceof Error ? error.message : 'Terjadi error server.',
-    })
+    const message = error instanceof Error ? error.message : 'Terjadi error server.'
+    const statusCode =
+      message === 'Sesi login tidak ditemukan.' ||
+      message === 'Session token tidak valid.' ||
+      message === 'Session token sudah tidak berlaku.' ||
+      message === 'SESSION_SECRET belum di-set.'
+        ? 401
+        : 500
+
+    sendJson(response, statusCode, { message })
   }
 }

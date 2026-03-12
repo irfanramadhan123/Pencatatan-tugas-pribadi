@@ -10,17 +10,18 @@ function normalizeTodo(row) {
   }
 }
 
-export async function listTodos(sql) {
+export async function listTodos(sql, userId) {
   const rows = await sql`
     SELECT id, text, done, category, deadline
     FROM todos
+    WHERE user_id = ${userId}
     ORDER BY created_at DESC, id DESC
   `
 
   return rows.map(normalizeTodo)
 }
 
-export async function createTodo(sql, request) {
+export async function createTodo(sql, request, userId) {
   const body = await readJsonBody(request)
   const text = String(body.text ?? '').trim()
   const category = String(body.category ?? '').trim() || 'Umum'
@@ -31,15 +32,15 @@ export async function createTodo(sql, request) {
   }
 
   const [todo] = await sql`
-    INSERT INTO todos (text, category, deadline)
-    VALUES (${text}, ${category}, ${deadline})
+    INSERT INTO todos (user_id, text, category, deadline)
+    VALUES (${userId}, ${text}, ${category}, ${deadline})
     RETURNING id, text, done, category, deadline
   `
 
   return normalizeTodo(todo)
 }
 
-export async function updateTodoStatus(sql, request, todoId) {
+export async function updateTodoStatus(sql, request, todoId, userId) {
   const body = await readJsonBody(request)
 
   if (typeof body.done !== 'boolean') {
@@ -49,23 +50,23 @@ export async function updateTodoStatus(sql, request, todoId) {
   const [todo] = await sql`
     UPDATE todos
     SET done = ${body.done}
-    WHERE id = ${todoId}
+    WHERE id = ${todoId} AND user_id = ${userId}
     RETURNING id, text, done, category, deadline
   `
 
   return todo ? normalizeTodo(todo) : null
 }
 
-export async function deleteTodo(sql, todoId) {
+export async function deleteTodo(sql, todoId, userId) {
   const [todo] = await sql`
     DELETE FROM todos
-    WHERE id = ${todoId}
+    WHERE id = ${todoId} AND user_id = ${userId}
     RETURNING id
   `
 
   return Boolean(todo)
 }
 
-export async function clearCompletedTodos(sql) {
-  await sql`DELETE FROM todos WHERE done = TRUE`
+export async function clearCompletedTodos(sql, userId) {
+  await sql`DELETE FROM todos WHERE done = TRUE AND user_id = ${userId}`
 }
