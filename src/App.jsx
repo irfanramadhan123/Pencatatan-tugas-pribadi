@@ -201,11 +201,10 @@ function App() {
         })
 
         window.google.accounts.id.renderButton(googleButtonRef.current, {
-          theme: theme === 'dark' ? 'filled_black' : 'outline',
+          theme: theme === 'dark' ? 'filled_black' : 'filled_blue',
           size: 'large',
-          shape: 'pill',
-          text: 'signin_with',
-          width: 320,
+          type: 'icon',
+          shape: 'circle',
         })
       } catch {
         if (isMounted) {
@@ -388,68 +387,69 @@ function App() {
 
   return (
     <main className="app-shell">
+      <header className="navbar">
+        <div className="navbar-brand">
+          <p className="eyebrow">Project Irfan</p>
+          <span className="navbar-title">Pencatatan Tugas Sederhana</span>
+        </div>
+
+        <div className="navbar-actions">
+          {!user ? (
+            googleClientId ? (
+              <div className="hero-login-box">
+                <div ref={googleButtonRef} className="google-button-slot hero-google-button-slot" />
+                {isAuthenticating ? <span className="hero-login-status" /> : null}
+              </div>
+            ) : null
+          ) : null}
+
+          {user ? (
+            <div className="hero-user-badge" title={user.email}>
+              {user.avatar ? (
+                <img className="hero-user-avatar" src={user.avatar} alt={user.fullName} />
+              ) : (
+                <span>{user.initials || 'U'}</span>
+              )}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() =>
+              setTheme((currentTheme) => (currentTheme === 'light' ? 'dark' : 'light'))
+            }
+          >
+            {theme === 'light' ? 'Dark mode' : 'Light mode'}
+          </button>
+        </div>
+      </header>
+
       <section className="hero">
         <div className="hero-copy">
-          <div className="hero-topbar">
-            <p className="eyebrow">Belajar React + Vite</p>
-            <div className="hero-actions">
-              {!user ? (
-                googleClientId ? (
-                  <div className="hero-login-box">
-                    <div ref={googleButtonRef} className="google-button-slot hero-google-button-slot" />
-                    {isAuthenticating ? (
-                      <p className="panel-note hero-login-note">Memproses login Google...</p>
-                    ) : null}
-                  </div>
-                ) : (
-                  <p className="panel-note hero-login-note">
-                    Isi `GOOGLE_CLIENT_ID` dan `VITE_GOOGLE_CLIENT_ID`.
-                  </p>
-                )
-              ) : null}
-
-              <button
-                type="button"
-                className="theme-toggle"
-                onClick={() =>
-                  setTheme((currentTheme) => (currentTheme === 'light' ? 'dark' : 'light'))
-                }
-              >
-                {theme === 'light' ? 'Dark mode' : 'Light mode'}
-              </button>
-            </div>
-          </div>
-          <h1>Todo dengan Google Auth</h1>
+          <h1>Pencatatan Tugas</h1>
           <p className="intro">
-            Masuk dengan akun Google, lihat profile singkat, lalu kelola tugas
-            per akun di dashboard yang sama.
+            Gunakan untuk mencatat tugas agar tidak terlewat. Login Google hanya
+            dipakai untuk menyimpan data tugas sesuai akun Anda.
           </p>
           <div className="hero-highlights">
-            <span className="highlight-pill">Google Sign-In</span>
-            <span className="highlight-pill">Profile pengguna</span>
-            <span className="highlight-pill">Todo per akun</span>
+            <span className="highlight-pill">Backend API</span>
+            <span className="highlight-pill">Neon PostgreSQL</span>
+            <span className="highlight-pill">Realtime fetch</span>
           </div>
         </div>
 
         <div className="hero-card">
-          {user ? (
-            <>
-              <p className="hero-card-label">Progress akun {user.fullName}</p>
-              <p className="hero-card-value">{progress}%</p>
-              <div className="progress-bar">
-                <span style={{ width: `${progress}%` }} />
-              </div>
-              <small>
-                {completedTodos} selesai dari {todos.length} tugas
-              </small>
-            </>
-          ) : (
-            <>
-              <p className="hero-card-label">Masuk dengan Google</p>
-              <p className="hero-card-value">OAuth</p>
-              <small>Gunakan akun Google untuk membuka dashboard pribadi Anda.</small>
-            </>
-          )}
+          <p className="hero-card-label">
+            {user ? `Progress akun ${user.fullName}` : 'Progress '}
+          </p>
+          <p className="hero-card-value">{progress}%</p>
+          <div className="progress-bar">
+            <span style={{ width: `${progress}%` }} />
+          </div>
+          <small>
+            {completedTodos} selesai dari {todos.length} tugas
+          </small>
         </div>
       </section>
 
@@ -463,7 +463,8 @@ function App() {
               <div>
                 <h2>Profile</h2>
                 <p className="panel-note">
-                  Setelah login, data akun Google dan statistik tugas akan muncul di sini.
+                  Login Google tersedia di kanan atas. Setelah login, profile dan data tugas
+                  akun Anda akan muncul di sini.
                 </p>
               </div>
             </div>
@@ -472,7 +473,7 @@ function App() {
               <span className="profile-avatar">G</span>
               <div>
                 <strong>Belum ada sesi aktif</strong>
-                <p>Login dengan Google dulu untuk melihat profile dan daftar tugas Anda.</p>
+                <p>Masuk dengan ikon Google di kanan atas untuk membuka data tugas pribadi.</p>
               </div>
             </div>
           </article>
