@@ -392,15 +392,32 @@ function App() {
         <div className="hero-copy">
           <div className="hero-topbar">
             <p className="eyebrow">Belajar React + Vite</p>
-            <button
-              type="button"
-              className="theme-toggle"
-              onClick={() =>
-                setTheme((currentTheme) => (currentTheme === 'light' ? 'dark' : 'light'))
-              }
-            >
-              {theme === 'light' ? 'Dark mode' : 'Light mode'}
-            </button>
+            <div className="hero-actions">
+              {!user ? (
+                googleClientId ? (
+                  <div className="hero-login-box">
+                    <div ref={googleButtonRef} className="google-button-slot hero-google-button-slot" />
+                    {isAuthenticating ? (
+                      <p className="panel-note hero-login-note">Memproses login Google...</p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="panel-note hero-login-note">
+                    Isi `GOOGLE_CLIENT_ID` dan `VITE_GOOGLE_CLIENT_ID`.
+                  </p>
+                )
+              ) : null}
+
+              <button
+                type="button"
+                className="theme-toggle"
+                onClick={() =>
+                  setTheme((currentTheme) => (currentTheme === 'light' ? 'dark' : 'light'))
+                }
+              >
+                {theme === 'light' ? 'Dark mode' : 'Light mode'}
+              </button>
+            </div>
           </div>
           <h1>Todo dengan Google Auth</h1>
           <p className="intro">
@@ -440,33 +457,7 @@ function App() {
       {error ? <p className="error-state">{error}</p> : null}
 
       {!user ? (
-        <section className="auth-layout">
-          <article className="panel auth-panel">
-            <div className="panel-head">
-              <div>
-                <h2>Login Google</h2>
-                <p className="panel-note">
-                  Login memakai Google Identity Services. Verifikasi token dilakukan di backend.
-                </p>
-              </div>
-            </div>
-
-            {googleClientId ? (
-              <div className="google-login-box">
-                <div ref={googleButtonRef} className="google-button-slot" />
-                {isAuthenticating ? <p className="panel-note">Memproses login Google...</p> : null}
-              </div>
-            ) : (
-              <div className="profile-empty">
-                <span className="profile-avatar">!</span>
-                <div>
-                  <strong>Client ID Google belum diatur</strong>
-                  <p>Isi `GOOGLE_CLIENT_ID` dan `VITE_GOOGLE_CLIENT_ID` di environment project.</p>
-                </div>
-              </div>
-            )}
-          </article>
-
+        <section className="auth-layout auth-layout-single">
           <article className="panel profile-panel">
             <div className="panel-head">
               <div>

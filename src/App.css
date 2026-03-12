@@ -23,6 +23,14 @@
   gap: 1rem;
 }
 
+.hero-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .eyebrow {
   margin: 0 0 0.75rem;
   font-size: 0.8rem;
@@ -140,6 +148,10 @@
   gap: 1.5rem;
 }
 
+.auth-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .stat-box {
   padding: 1.25rem 1.4rem;
   position: relative;
@@ -241,6 +253,20 @@
   display: grid;
   gap: 1rem;
   justify-items: start;
+}
+
+.hero-login-box {
+  display: grid;
+  justify-items: end;
+  gap: 0.4rem;
+}
+
+.hero-google-button-slot {
+  min-width: 320px;
+}
+
+.hero-login-note {
+  text-align: right;
 }
 
 .google-button-slot {
@@ -566,5 +592,19 @@
 
   .profile-meta {
     grid-template-columns: 1fr;
+  }
+
+  .hero-actions,
+  .hero-login-box {
+    align-items: stretch;
+  }
+
+  .hero-google-button-slot {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .hero-login-note {
+    text-align: left;
   }
 }
